@@ -83,7 +83,7 @@ npm run dev
 
 ## 3. Хэрхэн ашиглах
 
-1. **Source Folder Path:** **Browse…** дарж `.mxf` файлууд байгаа хавтсаа сонгоно.
+1. **Source Folder Path:** **Browse…** дарж `.mxf` файлууд байгаа хавтсаа сонгоно. Дотор нь дэд хавтаснууд байвал тэдгээрийн доторх `.mxf`-ийг ч бүгдийг нь олно (**4-р хэсэг**).
 2. **Destination Folder Path:** **Browse…** дарж хөрвүүлсэн файлууд хадгалагдах хавтсаа сонгоно. Байхгүй хавтас бичвэл автоматаар үүснэ.
    - Замыг гараар бичиж эсвэл буулгаж ч болно, жишээ нь `D:\RawFiles` эсвэл `/Users/нэр/RawFiles`.
 3. **Conversion Mode**-оос сонгоно:
@@ -111,7 +111,7 @@ npm run dev
 
 ---
 
-## 4. Файлын нэр
+## 4. Файлын нэр ба хавтасны бүтэц
 
 Гарах файл эх файлынхаа нэрийг авна. Зөвхөн өргөтгөл нь солигдоно:
 
@@ -119,6 +119,21 @@ npm run dev
 Interview_01.mxf   →  Interview_01.mp4
 Ярилцлага 2.mxf    →  Ярилцлага 2.mp3   (зөвхөн дуутай байсан бол)
 ```
+
+**Дэд хавтаснууд:** Source хавтас доторх бүх түвшний дэд хавтсыг шалгана. Destination дотор **яг ижил бүтэцтэй** хавтаснууд үүсгээд хадгална:
+
+```
+Source: D:\RawFiles                    Destination: D:\Converted
+├── top_video.mxf                      ├── top_video.mp4
+├── Өдөр 1\                            ├── Өдөр 1\
+│   ├── Cam A\video_01.MXF       →     │   ├── Cam A\video_01.mp4
+│   └── Cam B\video_02.mxf             │   └── Cam B\video_02.mp4
+└── Day 2\Audio\audio_01.mxf           └── Day 2\Audio\audio_01.mp3
+```
+
+- `.mxf` файлгүй хавтас Destination-д үүсэхгүй.
+- Нуугдмал файл, хавтсыг алгасна. Жишээ нь Mac-ийн гадаад диск дээр үүсдэг `._video_01.MXF` болон `.Trashes`.
+- Destination хавтас Source дотор байвал (`D:\RawFiles\Converted` г.м.) тэр хавтсыг дахин шалгахгүй.
 
 Хөрвүүлж байх үед түр зуур `Interview_01.mp4.part` гэж харагдана. Дуусмагц нэр нь `Interview_01.mp4` болно.
 
@@ -165,7 +180,7 @@ Interview_01.mxf   →  Interview_01.mp4
 | --- | --- |
 | `"ffmpeg" is not installed or not on PATH` | FFmpeg суугаагүй эсвэл Terminal/PowerShell-ээ шинээр нээгээгүй. **1-р алхмыг** давтана. |
 | `Use absolute paths for this OS` | Бүтэн зам бичнэ. Windows: `D:\RawFiles`, Mac: `/Users/нэр/RawFiles`. Эсвэл **Browse…** ашиглана. |
-| `No .mxf files found` | Сонгосон хавтсанд `.mxf` файл алга. Дэд хавтас доторх файлыг хайдаггүй. |
+| `No .mxf files found … or its subfolders` | Сонгосон хавтас болон түүний дэд хавтаснуудад `.mxf` файл алга. Зөв хавтас сонгосон эсэхээ шалгана. |
 | `Source folder not found` | Хавтасны зам буруу, эсвэл гадаад диск салгагдсан. |
 | `Invalid data found when processing input` | Тухайн MXF файл эвдэрсэн эсвэл бүрэн хуулагдаагүй. |
 | Browse… дарахад цонх гарахгүй | Цонх хөтчийн ард нээгдсэн байж магадгүй. Taskbar / Dock-оос шалгана. |

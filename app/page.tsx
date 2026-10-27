@@ -447,7 +447,11 @@ function Converter({ initial }: { initial: Settings }) {
                 {rows.map((row) => (
                   <tr key={row.index} className="align-top">
                     <td className="px-4 py-3">
-                      <div className="break-all font-mono text-xs">{row.name}</div>
+                      <div className="break-all font-mono text-xs">
+                        {/* Subfolder (if any) dimmed, file name emphasised */}
+                        <span className="text-zinc-500">{row.name.slice(0, row.name.search(/[^\\/]*$/))}</span>
+                        {row.name.slice(row.name.search(/[^\\/]*$/))}
+                      </div>
                       {row.output && (row.status === "completed" || row.status === "skipped") && (
                         <div className="mt-1 break-all font-mono text-xs text-zinc-500">→ {row.output}</div>
                       )}

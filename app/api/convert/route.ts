@@ -298,8 +298,12 @@ async function convertOne(
   signal: AbortSignal,
 ): Promise<"completed" | "skipped"> {
   const update = (u: Partial<FileUpdate>) => emit({ type: "file", index, name, ...u });
+  // `name` is relative to the source folder (e.g. "Day 1/Cam A/C0001.MXF"); the
+  // output goes to the same subfolder under the destination.
   const input = path.join(opts.source, name);
   const base = path.basename(name, path.extname(name));
+  // User-chosen folders at runtime; nothing for the build to trace.
+  const outDir = path.join(/*turbopackIgnore: true*/ opts.destination, path.dirname(name));
 
   update({ status: "probing" });
   const info = await probe(input, signal);
@@ -313,8 +317,7 @@ async function convertOne(
   let output: string;
   let message = plan.note;
   if (opts.skipExisting) {
-    // User-chosen folder at runtime; nothing for the build to trace.
-    output = path.join(/*turbopackIgnore: true*/ opts.destination, `${base}.${plan.format}`);
+    output = path.join(/*turbopackIgnore: true*/ outDir, `${base}.${plan.format}`);
     const exists = await fs.access(output).then(() => true, () => false);
     if (exists) {
       if (await isCompleteOutput(output, info.duration, signal)) {
@@ -331,8 +334,9 @@ async function convertOne(
       message = "Previous output was incomplete; converting again.";
     }
   } else {
-    output = await uniqueOutputPath(opts.destination, base, plan.format);
+    output = await uniqueOutputPath(outDir, base, plan.format);
   }
+  await fs.mkdir(outDir, { recursive: true });
 
   update({
     status: "processing",
@@ -422,6 +426,31 @@ function preventSleep(): () => void {
 // Route
 // ---------------------------------------------------------------------------
 
+/**
+ * All .mxf files under `root`, including subfolders, as paths relative to
+ * `root`, sorted folder by folder. Skips hidden files and folders (macOS
+ * "._C0001.MXF" metadata files on exFAT drives, .Trashes, …), symlinks, and
+ * the destination folder if it sits inside the source.
+ */
+async function findMxfFiles(root: string, destination: string): Promise<string[]> {
+  const found: string[] = [];
+  async function walk(dir: string, rel: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const full = path.join(dir, entry.name);
+      const relPath = rel ? path.join(rel, entry.name) : entry.name;
+      if (entry.isDirectory()) {
+        if (full !== destination) await walk(full, relPath);
+      } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === INPUT_EXTENSION) {
+        found.push(relPath);
+      }
+    }
+  }
+  await walk(root, "");
+  return found.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
 function badRequest(error: string) {
   return Response.json({ error }, { status: 400 });
 }
@@ -469,11 +498,8 @@ export async function POST(request: Request) {
     }
   }
 
-  const files = (await fs.readdir(source, { withFileTypes: true }))
-    .filter((d) => d.isFile() && path.extname(d.name).toLowerCase() === INPUT_EXTENSION)
-    .map((d) => d.name)
-    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  if (files.length === 0) return badRequest(`No .mxf files found in ${source}`);
+  const files = await findMxfFiles(source, destination);
+  if (files.length === 0) return badRequest(`No .mxf files found in ${source} or its subfolders`);
 
   // Stop work if the browser disconnects or the user presses Cancel.
   const abort = new AbortController();
