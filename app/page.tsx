@@ -92,6 +92,16 @@ function isDone(status: FileStatus) {
   return status === "completed" || status === "skipped" || status === "error";
 }
 
+/** Best-effort error text from a failed response (JSON `{ error }`, else status). */
+async function responseError(res: Response): Promise<string> {
+  const text = await res.text().catch(() => "");
+  try {
+    const data = JSON.parse(text);
+    if (typeof data?.error === "string") return data.error;
+  } catch {}
+  return `Server responded ${res.status} ${res.statusText}. See the terminal running "npm run dev" for details.`;
+}
+
 function now() {
   return new Date().toLocaleTimeString([], { hour12: false });
 }
@@ -145,8 +155,8 @@ function Converter({ initial }: { initial: Settings }) {
           current: target === "source" ? source : destination || source,
         }),
       });
-      const data: { path?: string; cancelled?: boolean; error?: string } = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok) throw new Error(await responseError(res));
+      const data: { path?: string; cancelled?: boolean } = await res.json();
       if (data.path) (target === "source" ? setSource : setDestination)(data.path);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -160,6 +170,9 @@ function Converter({ initial }: { initial: Settings }) {
       case "start":
         setRows(event.files.map((name, index) => ({ index, name, status: "queued" })));
         addLog(`Found ${event.total} file${event.total === 1 ? "" : "s"} to convert.`);
+        if (event.unreadable.length) {
+          addLog(`Could not open (skipped): ${event.unreadable.join(", ")}`, "warn");
+        }
         break;
 
       case "file": {
@@ -235,10 +248,7 @@ function Converter({ initial }: { initial: Settings }) {
         signal: controller.signal,
       });
 
-      if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? `Server responded ${res.status}`);
-      }
+      if (!res.ok || !res.body) throw new Error(await responseError(res));
 
       // The API streams newline-delimited JSON events.
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();

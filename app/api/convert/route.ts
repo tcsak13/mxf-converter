@@ -376,11 +376,12 @@ async function convertOne(
 
 async function convertAll(
   files: string[],
+  unreadable: string[],
   opts: BatchOptions,
   emit: (e: ConvertEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
-  emit({ type: "start", total: files.length, files });
+  emit({ type: "start", total: files.length, files, unreadable });
   let completed = 0;
   let skipped = 0;
   let failed = 0;
@@ -430,32 +431,62 @@ function preventSleep(): () => void {
  * All .mxf files under `root`, including subfolders, as paths relative to
  * `root`, sorted folder by folder. Skips hidden files and folders (macOS
  * "._C0001.MXF" metadata files on exFAT drives, .Trashes, …), symlinks, and
- * the destination folder if it sits inside the source.
+ * the destination folder if it sits inside the source. Subfolders that can't
+ * be read (e.g. permission denied) are skipped and listed in `unreadable`.
  */
-async function findMxfFiles(root: string, destination: string): Promise<string[]> {
+async function findMxfFiles(
+  root: string,
+  destination: string,
+): Promise<{ files: string[]; unreadable: string[] }> {
   const found: string[] = [];
+  const unreadable: string[] = [];
+  // Windows paths are case-insensitive.
+  const key = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
+  const destinationKey = key(destination);
+
   async function walk(dir: string, rel: string) {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch (err) {
+      if (!rel) throw err; // the source folder itself must be readable
+      unreadable.push(rel);
+      return;
+    }
     for (const entry of entries) {
-      if (entry.name.startsWith(".")) continue;
+      if (entry.name.startsWith(".") || WINDOWS_SYSTEM_FOLDERS.has(entry.name.toLowerCase())) continue;
       const full = path.join(dir, entry.name);
       const relPath = rel ? path.join(rel, entry.name) : entry.name;
       if (entry.isDirectory()) {
-        if (full !== destination) await walk(full, relPath);
+        if (key(full) !== destinationKey) await walk(full, relPath);
       } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === INPUT_EXTENSION) {
         found.push(relPath);
       }
     }
   }
   await walk(root, "");
-  return found.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return { files: found.sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), unreadable };
 }
+
+// Present at the root of Windows drives (e.g. D:\) and not readable by normal users.
+const WINDOWS_SYSTEM_FOLDERS = new Set(["$recycle.bin", "system volume information", "recycler"]);
 
 function badRequest(error: string) {
   return Response.json({ error }, { status: 400 });
 }
 
 export async function POST(request: Request) {
+  try {
+    return await handleConvert(request);
+  } catch (err) {
+    // Send the real reason as JSON so the page can show it (instead of a bare 500).
+    console.error("[convert]", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return Response.json({ error: `Server error: ${message}` }, { status: 500 });
+  }
+}
+
+async function handleConvert(request: Request) {
   let body: Partial<ConvertRequest>;
   try {
     body = await request.json();
@@ -498,8 +529,19 @@ export async function POST(request: Request) {
     }
   }
 
-  const files = await findMxfFiles(source, destination);
-  if (files.length === 0) return badRequest(`No .mxf files found in ${source} or its subfolders`);
+  let scan: { files: string[]; unreadable: string[] };
+  try {
+    scan = await findMxfFiles(source, destination);
+  } catch (err) {
+    return badRequest(`Cannot read source folder: ${(err as Error).message}`);
+  }
+  const { files, unreadable } = scan;
+  if (files.length === 0) {
+    return badRequest(
+      `No .mxf files found in ${source} or its subfolders` +
+        (unreadable.length ? ` (could not open: ${unreadable.join(", ")})` : ""),
+    );
+  }
 
   // Stop work if the browser disconnects or the user presses Cancel.
   const abort = new AbortController();
@@ -517,7 +559,7 @@ export async function POST(request: Request) {
       };
       const allowSleep = preventSleep();
       try {
-        await convertAll(files, { source, destination, mode, skipExisting }, emit, abort.signal);
+        await convertAll(files, unreadable, { source, destination, mode, skipExisting }, emit, abort.signal);
       } catch (err) {
         emit({ type: "fatal", message: err instanceof Error ? err.message : String(err) });
       } finally {

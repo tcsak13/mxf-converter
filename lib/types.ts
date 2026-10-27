@@ -31,7 +31,13 @@ export interface FileUpdate {
 
 /** The API streams these as newline-delimited JSON (one object per line). */
 export type ConvertEvent =
-  | { type: "start"; total: number; files: string[] }
+  | {
+      type: "start";
+      total: number;
+      files: string[];
+      /** Subfolders that couldn't be opened (e.g. permission denied) and were skipped. */
+      unreadable: string[];
+    }
   | ({ type: "file" } & FileUpdate)
   | { type: "done"; completed: number; skipped: number; failed: number }
   | { type: "fatal"; message: string };
