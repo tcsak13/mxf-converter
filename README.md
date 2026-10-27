@@ -1,36 +1,199 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MXF Batch Converter
 
-## Getting Started
+Хавтас доторх бүх `.mxf` бичлэгийг нэг дор хөрвүүлдэг програм. Файл бүрийг шалгаад:
 
-First, run the development server:
+| Файлд байгаа зүйл | Гарах файл |
+| --- | --- |
+| Видео (дүрс + дуу) | **`.mp4`**: 720p, H.264, YouTube болон вэбд тохиромжтой |
+| Зөвхөн дуу | **`.mp3`**: 320 kbps |
+
+Эх `.mxf` файлыг зөвхөн уншдаг. Өөрчлөх, устгах, дарж бичих зүйл огт хийхгүй.
+
+Програм таны компьютер дээр ажиллана. Файл интернэтээр хаашаа ч илгээгдэхгүй.
+
+---
+
+## 1. Суулгах (нэг л удаа)
+
+Хоёр програм хэрэгтэй: **Node.js** (апп-ыг ажиллуулна) ба **FFmpeg** (бичлэгийг хөрвүүлнэ).
+
+### macOS
+
+**Terminal**-ыг нээнэ (Spotlight → "Terminal").
+
+1. Homebrew суулгаагүй бол эхлээд суулгана:
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+2. Node.js ба FFmpeg:
+   ```bash
+   brew install node ffmpeg
+   ```
+3. Шалгах. Хоёулаа хувилбарын дугаар гаргавал болсон:
+   ```bash
+   node -v
+   ffmpeg -version
+   ```
+
+### Windows
+
+**PowerShell**-ийг нээнэ (Start → "PowerShell").
+
+1. Node.js ба FFmpeg:
+   ```powershell
+   winget install OpenJS.NodeJS.LTS
+   winget install Gyan.FFmpeg
+   ```
+2. PowerShell-ээ **хаагаад шинээр нээнэ**. Тэгэхгүй бол шинэ програмуудыг олж харахгүй.
+3. Шалгах:
+   ```powershell
+   node -v
+   ffmpeg -version
+   ```
+
+### Төслийн хавтсыг бэлдэх
+
+`converter` хавтсыг хүссэн газраа хуулна, жишээ нь Mac дээр `~/Desktop/converter`, Windows дээр `D:\converter`.
+
+> ⚠️ Нэг компьютерээс нөгөө рүү хуулахдаа **`node_modules`** ба **`.next`** хавтсыг хуулахгүй, хуулсан бол устгана. Тэдгээр нь тухайн системд зориулагдсан тул нөгөө систем дээр ажиллахгүй.
+
+Дараа нь төслийн хавтсанд нэг удаа:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd ~/Desktop/converter      # Windows: cd D:\converter
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 2. Ажиллуулах (ашиглах болгондоо)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd ~/Desktop/converter      # Windows: cd D:\converter
+npm run dev
+```
 
-## Learn More
+`Ready` гэж гарсны дараа хөтчөөр **http://localhost:3000** нээнэ.
 
-To learn more about Next.js, take a look at the following resources:
+Ажиллаж дууссаны дараа Terminal / PowerShell цонхон дээр **`Ctrl + C`** дарж зогсооно.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Windows дээр эхний удаа Firewall "Node.js сүлжээнд хандах уу" гэж асууж магадгүй. Зөвхөн өөрийн компьютерээс ашиглах бол **Cancel** дарахад болно.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 3. Хэрхэн ашиглах
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Source Folder Path:** **Browse…** дарж `.mxf` файлууд байгаа хавтсаа сонгоно.
+2. **Destination Folder Path:** **Browse…** дарж хөрвүүлсэн файлууд хадгалагдах хавтсаа сонгоно. Байхгүй хавтас бичвэл автоматаар үүснэ.
+   - Замыг гараар бичиж эсвэл буулгаж ч болно, жишээ нь `D:\RawFiles` эсвэл `/Users/нэр/RawFiles`.
+3. **Conversion Mode**-оос сонгоно:
+   | Горим | Юу хийх |
+   | --- | --- |
+   | **Auto-Detect** (зөвлөмж) | Видеотой бол MP4, зөвхөн дуутай бол MP3 |
+   | **Force MP3 Only** | Бүх файлаас зөвхөн дууг нь MP3 болгож авна |
+   | **Force MP4** | Бүгдийг MP4 болгоно (видеогүй бол зөвхөн дуутай MP4) |
+4. **Start Batch Conversion** дарна.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Хүснэгтэд файл бүрийн төлөв харагдана:
+
+| Төлөв | Утга |
+| --- | --- |
+| Queued | Дараалалд хүлээж байна |
+| Detecting… | Видео эсвэл дуу эсэхийг шалгаж байна |
+| Processing 45% | Хөрвүүлж байна |
+| Completed | Дууссан |
+| Skipped | Өмнө нь хөрвүүлэгдсэн тул алгассан |
+| Error | Алдаа гарсан, шалтгаан нь доор нь бичигдэнэ |
+
+Доод талын **Progress Log** хэсэгт бүх үйлдэл цагийн хамт бичигдэнэ. **Cancel** дарвал хөрвүүлэлт зогсоно.
+
+Хавтас, горимын сонголтыг програм санаж үлдээдэг тул дараагийн удаа дахин сонгох шаардлагагүй.
+
+---
+
+## 4. Файлын нэр
+
+Гарах файл эх файлынхаа нэрийг авна. Зөвхөн өргөтгөл нь солигдоно:
+
+```
+Interview_01.mxf   →  Interview_01.mp4
+Ярилцлага 2.mxf    →  Ярилцлага 2.mp3   (зөвхөн дуутай байсан бол)
+```
+
+Хөрвүүлж байх үед түр зуур `Interview_01.mp4.part` гэж харагдана. Дуусмагц нэр нь `Interview_01.mp4` болно.
+
+---
+
+## 5. Цахилгаан тасрах, компьютер унтрах үед
+
+**"Skip files already converted (resume)"** сонголтыг асаалттай байлгана (анхдагчаар асаалттай).
+
+Асуудал гарвал програмаа дахин ажиллуулж (**2-р алхам**) **Start**-ыг дарахад л болно:
+
+- Бүрэн дууссан файлууд → **Skipped**, дахин хөрвүүлэгдэхгүй
+- Тасарсан файл → тэр файл эхнээсээ дахин хөрвүүлэгдэнэ
+- Хараахан эхлээгүй файлууд → ердийнхөөрөө хөрвүүлэгдэнэ
+
+Дууссан эсэхийг програм файл бүрийн уртыг эх файлтай нь харьцуулж шалгадаг. Тиймээс дутуу хадгалагдсан файлыг "дууссан" гэж андуурахгүй.
+
+Сонголтыг **унтраавал** бүх файлыг шинээр хөрвүүлнэ. Байгаа файлыг дарж бичихгүй, `Interview_01 (1).mp4` гэж хадгална.
+
+### Унтах горим
+
+- **macOS:** хөрвүүлэлт явж байх үед Mac автоматаар унтахгүй.
+- **Windows:** энэ хамгаалалт **байхгүй**. Олон цаг хөрвүүлэх бол **Settings → System → Power & battery → Sleep**-ийг **Never** болгоно уу.
+
+Хөтчийн табыг хаавал хөрвүүлэлт зогсоно. Дуустал хуудсаа нээлттэй байлгаарай.
+
+---
+
+## 6. Чанарын тухай
+
+- **720p:** 1080p буюу түүнээс том бичлэг 1280×720 болж жижгэрнэ. Жижиг бичлэгийг томруулахгүй. 1440×1080 зэрэг сунгадаг пикселтэй бичлэгийг зөв харьцаагаар хувиргана.
+- **Чанар (CRF 23):** нүдэнд эх бичлэгээс бараг ялгаагүй. Хэмжээ нь хэд дахин багасна.
+- **Interlaced (1080i):** зураасгүй болгож (deinterlace) секундэд 25/30 кадр болгоно.
+- **Дуу:** MXF-ийн хоёр тусдаа моно дууны замыг стерео болгож нийлүүлнэ.
+- **Тоглуулах:** гарсан MP4 утас, хөтөч, YouTube дээр гацалтгүй тоглохоор тохируулагдсан.
+
+Эхний удаа 1–2 файлаар туршиж, бичлэгийг эхэнд, дунд, төгсгөлд нь гүйлгэж, дуу дүрстэйгээ тохирч байгааг шалгахыг зөвлөж байна.
+
+---
+
+## 7. Асуудал гарвал
+
+| Алдаа | Шийдэл |
+| --- | --- |
+| `"ffmpeg" is not installed or not on PATH` | FFmpeg суугаагүй эсвэл Terminal/PowerShell-ээ шинээр нээгээгүй. **1-р алхмыг** давтана. |
+| `Use absolute paths for this OS` | Бүтэн зам бичнэ. Windows: `D:\RawFiles`, Mac: `/Users/нэр/RawFiles`. Эсвэл **Browse…** ашиглана. |
+| `No .mxf files found` | Сонгосон хавтсанд `.mxf` файл алга. Дэд хавтас доторх файлыг хайдаггүй. |
+| `Source folder not found` | Хавтасны зам буруу, эсвэл гадаад диск салгагдсан. |
+| `Invalid data found when processing input` | Тухайн MXF файл эвдэрсэн эсвэл бүрэн хуулагдаагүй. |
+| Browse… дарахад цонх гарахгүй | Цонх хөтчийн ард нээгдсэн байж магадгүй. Taskbar / Dock-оос шалгана. |
+| `npm` эсвэл `node` олдохгүй | Node.js суугаагүй. **1-р алхам**. |
+
+### FFmpeg өөр газар суусан бол
+
+Төслийн хавтсанд `.env.local` нэртэй файл үүсгээд байрлалыг нь бичнэ. Дараа нь програмаа дахин асаана:
+
+```
+FFMPEG_PATH=C:\ffmpeg\bin\ffmpeg.exe
+FFPROBE_PATH=C:\ffmpeg\bin\ffprobe.exe
+```
+
+---
+
+## 8. Тохиргоо өөрчлөх (хөгжүүлэгчдэд)
+
+| Юуг | Хаана |
+| --- | --- |
+| Видеоны дээд өндөр (720 → 1080 г.м.) | `app/api/convert/route.ts`, `MAX_VIDEO_HEIGHT` |
+| Чанар, кодек, bitrate | `app/api/convert/route.ts`, `buildFfmpegArgs()` |
+| Хуудасны харагдах байдал | `app/page.tsx` |
+
+Файлын бүтэц:
+
+- `app/page.tsx`: хэрэглэгчийн хуудас (хавтас сонгох, горим, явцын хүснэгт, лог)
+- `app/api/convert/route.ts`: файл хайх, `ffprobe`-оор шалгах, `ffmpeg`-ээр хөрвүүлэх, явцыг хуудас руу дамжуулах
+- `app/api/pick-folder/route.ts`: системийн хавтас сонгох цонхыг нээх
+- `lib/run.ts`, `lib/types.ts`: туслах функц ба төрлүүд
+# mxf-converter
